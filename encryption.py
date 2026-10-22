@@ -10,33 +10,33 @@ from key_generator import load_keys
 
 
 def encrypt_message(message, public_key):
-    # 1. Jednorazowa para kluczy nadawcy
+    
     ephemeral_private = ec.generate_private_key(ec.SECP256R1())
     ephemeral_public = ephemeral_private.public_key()
 
-    # 2. Wspólny sekret ECDH
+    
     shared_secret = generate_shared_secret(
         ephemeral_private, public_key
     )
 
-    # 3. Klucz AES z HKDF
+    
     salt = os.urandom(16)
     aes_key = derive_aes_key(shared_secret, salt)
 
-    # 4. Szyfrowanie wiadomości
+    
     nonce = os.urandom(12)
     aesgcm = AESGCM(aes_key)
     ciphertext = aesgcm.encrypt(
         nonce, message.encode("utf-8"), None
     )
 
-    # 5. Eksport publicznego klucza efemerycznego
+   
     ephemeral_bytes = ephemeral_public.public_bytes(
         encoding=serialization.Encoding.X962,
         format=serialization.PublicFormat.UncompressedPoint
     )
 
-    # 6. Zwrócenie danych jako Base64
+    
     return {
         "ciphertext": base64.b64encode(ciphertext).decode(),
         "nonce": base64.b64encode(nonce).decode(),
