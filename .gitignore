@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.idea/
+
+private_key.pem
+public_key.pem
+encrypted.json
