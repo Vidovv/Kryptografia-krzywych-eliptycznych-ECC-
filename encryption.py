@@ -4,39 +4,40 @@ from getpass import getpass
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import serialization
+from ecc_library import curve, ECCPoint
 
 from ecdh import generate_shared_secret, derive_aes_key
 from key_generator import load_keys
 
-
 def encrypt_message(message, public_key):
-    
-    ephemeral_private = ec.generate_private_key(ec.SECP256R1())
+
+    ephemeral_private = ec.generate_private_key(ec.SECP256K1())
     ephemeral_public = ephemeral_private.public_key()
 
-    
+
     shared_secret = generate_shared_secret(
         ephemeral_private, public_key
     )
 
-    
+
     salt = os.urandom(16)
     aes_key = derive_aes_key(shared_secret, salt)
 
-    
+
     nonce = os.urandom(12)
     aesgcm = AESGCM(aes_key)
+
     ciphertext = aesgcm.encrypt(
         nonce, message.encode("utf-8"), None
     )
 
-   
+
     ephemeral_bytes = ephemeral_public.public_bytes(
         encoding=serialization.Encoding.X962,
         format=serialization.PublicFormat.UncompressedPoint
     )
 
-    
+
     return {
         "ciphertext": base64.b64encode(ciphertext).decode(),
         "nonce": base64.b64encode(nonce).decode(),
@@ -47,16 +48,18 @@ def encrypt_message(message, public_key):
 
 def decrypt_message(encrypted_data, private_key):
 
+
     ciphertext = base64.b64decode(encrypted_data["ciphertext"])
     nonce = base64.b64decode(encrypted_data["nonce"])
     salt = base64.b64decode(encrypted_data["salt"])
+
     ephemeral_bytes = base64.b64decode(
         encrypted_data["ephemeral_public_key"]
     )
 
 
     ephemeral_public = ec.EllipticCurvePublicKey.from_encoded_point(
-        ec.SECP256R1(), ephemeral_bytes
+        ec.SECP256K1(), ephemeral_bytes
     )
 
 
@@ -75,21 +78,15 @@ def decrypt_message(encrypted_data, private_key):
 
 
 if __name__ == "__main__":
-    password = getpass("Podaj hasło do klucza prywatnego: ")
+    from key_generator import generate_keys
 
-    try:
-        private_key, public_key = load_keys(password)
+    private_key, public_key, *_ = generate_keys()
 
-        message = input("Podaj wiadomość do zaszyfrowania: ")
+    message = "Test szyfrowania ECC"
 
-        encrypted = encrypt_message(message, public_key)
+    encrypted = encrypt_message(message, public_key)
+    decrypted = decrypt_message(encrypted, private_key)
 
-        print("\nZaszyfrowane dane:")
-        for name, value in encrypted.items():
-            print(f"{name}: {value}")
-
-        decrypted = decrypt_message(encrypted, private_key)
-        print("\nOdszyfrowana wiadomość:", decrypted)
-
-    except (ValueError, TypeError, OSError) as error:
-        print(f"Błąd wczytywania lub przetwarzania danych: {error}")
+    print("Wiadomość:", message)
+    print("Odszyfrowano:", decrypted)
+    print("Czy wiadomości są zgodne?", message == decrypted)

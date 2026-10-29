@@ -1,15 +1,24 @@
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+import secrets
+from ecc_library import curve, G, n
 
 def generate_keys():
-    private_key = ec.generate_private_key(ec.SECP256R1())
-    public_key = private_key.public_key()
-    d = private_key.private_numbers().private_value
+    d = secrets.randbelow(n - 1) + 1
 
-    public_numbers = public_key.public_numbers()
-    x = public_numbers.x
-    y = public_numbers.y
-    return private_key, public_key, d,  x,y
+    Q = curve.multiply(G, d)
+
+    x = Q.x
+    y = Q.y
+
+    private_key = ec.derive_private_key(d, ec.SECP256K1())
+
+    public_numbers = ec.EllipticCurvePublicNumbers(
+        x, y, ec.SECP256K1()
+    )
+    public_key = public_numbers.public_key()
+
+    return private_key, public_key, d, x, y
 
 def serialize_keys(private_key, public_key, password):
     if not password:
@@ -86,4 +95,12 @@ if __name__ == "__main__":
         print("Klucze są zgodne!")
     else:
         print("Klucze NIE są zgodne!")
+
+    private_key, public_key, d, x, y = generate_keys()
+
+    reference = private_key.public_key().public_numbers()
+
+    print("Czy X jest zgodne?", x == reference.x)
+    print("Czy Y jest zgodne?", y == reference.y)
+    print("Czy klucze są zgodne?", verify_keys(private_key, public_key))
 
