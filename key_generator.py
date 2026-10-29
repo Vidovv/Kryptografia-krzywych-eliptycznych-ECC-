@@ -11,8 +11,7 @@ def generate_keys():
     y = public_numbers.y
     return private_key, public_key, d,  x,y
 
-
-def save_keys(private_key, public_key, password):
+def serialize_keys(private_key, public_key, password):
     if not password:
         raise ValueError("Hasło nie może być puste.")
 
@@ -23,18 +22,31 @@ def save_keys(private_key, public_key, password):
             password.encode("utf-8")
         )
     )
-
     public_pem = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
+    return private_pem, public_pem
+
+def deserialize_private_key(private_pem, password):
+    return serialization.load_pem_private_key(
+        private_pem,
+        password=password.encode("utf-8")
+    )
+
+
+
+def deserialize_public_key(public_pem):
+    return serialization.load_pem_public_key(public_pem)
+
+def save_keys(private_key, public_key, password):
+    private_pem, public_pem = serialize_keys(private_key, public_key, password)
 
     with open("private_key.pem", "wb") as file:
         file.write(private_pem)
 
     with open("public_key.pem", "wb") as file:
         file.write(public_pem)
-
 
 
 def load_keys(password):
@@ -44,14 +56,8 @@ def load_keys(password):
     with open("public_key.pem", "rb") as file:
         public_pem = file.read()
 
-    private_key = serialization.load_pem_private_key(
-        private_pem,
-        password=password.encode("utf-8")
-    )
-
-    public_key = serialization.load_pem_public_key(
-        public_pem
-    )
+    private_key = deserialize_private_key(private_pem, password)
+    public_key = deserialize_public_key(public_pem)
 
     return private_key, public_key
 
