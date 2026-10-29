@@ -1,0 +1,49 @@
+body{
+    background-color: whitesmoke;
+    color: powderblue;
+    font-family:'Courier New', Courier, monospace;
+
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content:space-evenly;
+    align-items: center;
+}
+
+.containerEn{
+    background-color: paleturquoise;
+    padding: 30px;
+    border-radius: 10px;
+    height: 500px;
+    width: 100%;
+    max-width: 500px;
+    resize: none;
+    label{
+        color: black;
+    }
+}
+
+.containerDe{
+    background-color: palegreen;
+    padding: 30px;
+    border-radius: 10px;
+    height: 500px;
+    width: 100%;
+    max-width: 500px;
+    resize: none;
+    label{
+        color: black;
+    }
+}
+
+textarea {
+    width: 100%;
+    height: 120px;
+    resize: none;
+    box-sizing: border-box;
+}
+
+#statusEn, #statusDe {
+    color: black;
+}
+

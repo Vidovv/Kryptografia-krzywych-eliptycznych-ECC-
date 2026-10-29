@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+    <meta charset="UTF-8">
+    <title>Kryptografia Krzywych Eliptycznych</title>
+ 
+</head>
+<body>
+    <main class="containerEn">
+        <p><label for="keyEn">Klucz</label></p>
+        <textarea id="keyEn" placeholder="Wprowadź klucz" rows="5" columns="50"></textarea>
+        <p><label for="messageEn">Treść</label></p>
+        <textarea id="messageEn" placeholder="Wpisz wiadomość" rows="5" columns="50"></textarea>
+        <button id="encryptBtn" type="button">Szyfruj</button>
+        <pre id="resultEn"></pre>
+        <p id="statusEn" role="statusEn" aria-live="polite"></p>
+    </main>
+
+    <main class="containerDe">
+        <p><label for="keyDe">Klucz</label></p>
+        <textarea id="keyDe" placeholder="Wprowadź klucz" rows="5" columns="50"></textarea>
+        <p><label for="messageDe">Treść</label></p>
+        <textarea id="messageDe" placeholder="Wpisz zaszyfrowaną treść" rows="5" columns="50"></textarea>
+        <button id="decryptBtn" type="button">Odszyfruj</button>
+        <pre id="resultDe"></pre>
+        <p id="statusDe" role="statusDe" aria-live="polite"></p>
+    </main>
+
+</body>
+</html>
