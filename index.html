@@ -1,48 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ECC – szyfrowanie wiadomości</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
-</head>
-<body>
-  <main class="container">
-    <header><h1>Kryptografia ECC</h1><p>Generowanie kluczy, szyfrowanie i deszyfrowanie wiadomości</p></header>
-    <nav class="tabs" role="tablist" aria-label="Funkcje aplikacji">
-      <button id="tab-keys" class="tab active" data-tab="keys" role="tab" aria-controls="panel-keys" aria-selected="true">Generacja kluczy</button>
-      <button id="tab-encrypt" class="tab" data-tab="encrypt" role="tab" aria-controls="panel-encrypt" aria-selected="false">Szyfrowanie</button>
-      <button id="tab-decrypt" class="tab" data-tab="decrypt" role="tab" aria-controls="panel-decrypt" aria-selected="false">Deszyfrowanie</button>
-    </nav>
-    <section id="panel-keys" class="panel" role="tabpanel" aria-labelledby="tab-keys">
-      <h2>Generacja kluczy</h2>
-      <label for="generatePassword">Hasło zabezpieczające klucz prywatny</label>
-      <input id="generatePassword" type="password" placeholder="Podaj hasło" autocomplete="new-password">
-      <div class="action"><button id="generateBtn" class="primary">Generuj klucze</button><span id="statusKeys" class="feedback" role="status"></span></div>
-      <div id="generatedResults" class="results hidden">
-        <label for="publicKeyGenerated">Klucz publiczny</label><textarea id="publicKeyGenerated" rows="5" readonly spellcheck="false"></textarea>
-        <div class="actions"><button type="button" data-copy="publicKeyGenerated">Kopiuj</button><button id="usePublicBtn" type="button">Użyj do szyfrowania</button></div>
-        <label for="privateKeyGenerated">Klucz prywatny</label><textarea id="privateKeyGenerated" rows="6" readonly spellcheck="false"></textarea>
-        <div class="actions"><button type="button" data-copy="privateKeyGenerated">Kopiuj</button><button id="usePrivateBtn" type="button">Użyj do deszyfrowania</button></div>
-      </div>
-    </section>
-    <section id="panel-encrypt" class="panel hidden" role="tabpanel" aria-labelledby="tab-encrypt">
-      <h2>Szyfrowanie</h2>
-      <label for="keyEn">Klucz publiczny (PEM)</label><textarea id="keyEn" rows="5" spellcheck="false" placeholder="Wklej klucz publiczny"></textarea>
-      <label for="messageEn">Wiadomość</label><textarea id="messageEn" rows="4" placeholder="Wpisz tekst do zaszyfrowania"></textarea>
-      <div class="action"><button id="encryptBtn" class="primary">Szyfruj</button><span id="statusEn" class="feedback" role="status"></span></div>
-      <div id="encryptResults" class="results hidden"><label for="resultEn">Wynik szyfrowania (JSON)</label><textarea id="resultEn" rows="9" readonly spellcheck="false"></textarea><div class="actions"><button type="button" data-copy="resultEn">Kopiuj wynik</button><button id="useEncryptedBtn" type="button">Przejdź do deszyfrowania</button></div></div>
-    </section>
-    <section id="panel-decrypt" class="panel hidden" role="tabpanel" aria-labelledby="tab-decrypt">
-      <h2>Deszyfrowanie</h2>
-      <label for="keyDe">Klucz prywatny (PEM)</label><textarea id="keyDe" rows="5" spellcheck="false" placeholder="Wklej klucz prywatny"></textarea>
-      <label for="decryptPassword">Hasło klucza prywatnego</label><input id="decryptPassword" type="password" autocomplete="current-password" placeholder="Podaj hasło">
-      <label for="messageDe">Zaszyfrowane dane (JSON)</label><textarea id="messageDe" rows="7" spellcheck="false" placeholder="Wklej wynik szyfrowania"></textarea>
-      <div class="action"><button id="decryptBtn" class="primary">Deszyfruj</button><span id="statusDe" class="feedback" role="status"></span></div>
-      <div id="decryptResults" class="results hidden"><label for="resultDe">Odszyfrowana wiadomość</label><textarea id="resultDe" rows="4" readonly></textarea><div class="actions"><button type="button" data-copy="resultDe">Kopiuj</button></div></div>
-    </section>
-    <footer>Projekt demonstracyjny – ECC</footer>
-  </main>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ECC – szyfrowanie wiadomości</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Kryptografia ECC</h1>
+        <p>Generowanie kluczy, szyfrowanie i deszyfrowanie wiadomości</p>
+      </header>
+      <nav class="tabs" role="tablist" aria-label="Funkcje aplikacji">
+        <button
+          id="tab-keys"
+          class="tab active"
+          data-tab="keys"
+          role="tab"
+          aria-controls="panel-keys"
+          aria-selected="true"
+        >
+          Generacja kluczy
+        </button>
+        <button
+          id="tab-encrypt"
+          class="tab"
+          data-tab="encrypt"
+          role="tab"
+          aria-controls="panel-encrypt"
+          aria-selected="false"
+        >
+          Szyfrowanie
+        </button>
+        <button
+          id="tab-decrypt"
+          class="tab"
+          data-tab="decrypt"
+          role="tab"
+          aria-controls="panel-decrypt"
+          aria-selected="false"
+        >
+          Deszyfrowanie
+        </button>
+      </nav>
+      <section
+        id="panel-keys"
+        class="panel"
+        role="tabpanel"
+        aria-labelledby="tab-keys"
+      >
+        <h2>Generacja kluczy</h2>
+        <label for="generatePassword"
+          >Hasło zabezpieczające klucz prywatny</label
+        >
+        <input
+          id="generatePassword"
+          type="password"
+          placeholder="Podaj hasło"
+          autocomplete="new-password"
+        />
+        <div class="action">
+          <button id="generateBtn" class="primary">Generuj klucze</button
+          ><span id="statusKeys" class="feedback" role="status"></span>
+        </div>
+        <div id="generatedResults" class="results hidden">
+          <label for="publicKeyGenerated">Klucz publiczny</label
+          ><textarea
+            id="publicKeyGenerated"
+            rows="5"
+            readonly
+            spellcheck="false"
+          ></textarea>
+          <div class="actions">
+            <button type="button" data-copy="publicKeyGenerated">Kopiuj</button
+            ><button id="usePublicBtn" type="button">
+              Użyj do szyfrowania
+            </button>
+          </div>
+          <label for="privateKeyGenerated">Klucz prywatny</label
+          ><textarea
+            id="privateKeyGenerated"
+            rows="6"
+            readonly
+            spellcheck="false"
+          ></textarea>
+          <div class="actions">
+            <button type="button" data-copy="privateKeyGenerated">Kopiuj</button
+            ><button id="usePrivateBtn" type="button">
+              Użyj do deszyfrowania
+            </button>
+          </div>
+        </div>
+      </section>
+      <section
+        id="panel-encrypt"
+        class="panel hidden"
+        role="tabpanel"
+        aria-labelledby="tab-encrypt"
+      >
+        <h2>Szyfrowanie</h2>
+        <label for="keyEn">Klucz publiczny (PEM)</label
+        ><textarea
+          id="keyEn"
+          rows="5"
+          spellcheck="false"
+          placeholder="Wklej klucz publiczny"
+        ></textarea>
+        <label for="messageEn">Wiadomość</label
+        ><textarea
+          id="messageEn"
+          rows="4"
+          placeholder="Wpisz tekst do zaszyfrowania"
+        ></textarea>
+        <div class="action">
+          <button id="encryptBtn" class="primary">Szyfruj</button
+          ><span id="statusEn" class="feedback" role="status"></span>
+        </div>
+        <div id="encryptResults" class="results hidden">
+          <label for="resultEn">Wynik szyfrowania (JSON)</label
+          ><textarea
+            id="resultEn"
+            rows="9"
+            readonly
+            spellcheck="false"
+          ></textarea>
+          <div class="actions">
+            <button type="button" data-copy="resultEn">Kopiuj wynik</button
+            ><button id="useEncryptedBtn" type="button">
+              Przejdź do deszyfrowania
+            </button>
+          </div>
+        </div>
+      </section>
+      <section
+        id="panel-decrypt"
+        class="panel hidden"
+        role="tabpanel"
+        aria-labelledby="tab-decrypt"
+      >
+        <h2>Deszyfrowanie</h2>
+        <label for="keyDe">Klucz prywatny (PEM)</label
+        ><textarea
+          id="keyDe"
+          rows="5"
+          spellcheck="false"
+          placeholder="Wklej klucz prywatny"
+        ></textarea>
+        <label for="decryptPassword">Hasło klucza prywatnego</label
+        ><input
+          id="decryptPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Podaj hasło"
+        />
+        <label for="messageDe">Zaszyfrowane dane (JSON)</label
+        ><textarea
+          id="messageDe"
+          rows="7"
+          spellcheck="false"
+          placeholder="Wklej wynik szyfrowania"
+        ></textarea>
+        <div class="action">
+          <button id="decryptBtn" class="primary">Deszyfruj</button
+          ><span id="statusDe" class="feedback" role="status"></span>
+        </div>
+        <div id="decryptResults" class="results hidden">
+          <label for="resultDe">Odszyfrowana wiadomość</label
+          ><textarea id="resultDe" rows="4" readonly></textarea>
+          <div class="actions">
+            <button type="button" data-copy="resultDe">Kopiuj</button>
+          </div>
+        </div>
+      </section>
+      <footer>Projekt demonstracyjny – ECC</footer>
+    </main>
+  </body>
 </html>

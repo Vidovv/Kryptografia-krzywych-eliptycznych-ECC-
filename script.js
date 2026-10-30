@@ -29,8 +29,13 @@ document.querySelectorAll("[data-tab]").forEach((button) => {
     event.preventDefault();
     const tabs = [...document.querySelectorAll("[data-tab]")];
     const idx = tabs.indexOf(button);
-    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
-      (idx + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : (idx + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) %
+            tabs.length;
     tabs[next].focus();
     switchTab(tabs[next].dataset.tab);
   });
@@ -42,17 +47,29 @@ async function request(path, payload) {
     response = await fetch(API_URL + path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
   } catch {
-    throw new Error("Nie można połączyć się z API. Sprawdź, czy FastAPI i serwer frontendowy działają.");
+    throw new Error(
+      "Nie można połączyć się z API. Sprawdź, czy FastAPI i serwer frontendowy działają.",
+    );
   }
   let data;
-  try { data = await response.json(); } catch { throw new Error(`Nieprawidłowa odpowiedź serwera (HTTP ${response.status}).`); }
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      `Nieprawidłowa odpowiedź serwera (HTTP ${response.status}).`,
+    );
+  }
   if (!response.ok) {
     const detail = data.detail;
-    const message = typeof detail === "string" ? detail : Array.isArray(detail) ?
-      detail.map((item) => item.msg || "Niepoprawne dane").join("; ") : `Błąd HTTP ${response.status}`;
+    const message =
+      typeof detail === "string"
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((item) => item.msg || "Niepoprawne dane").join("; ")
+          : `Błąd HTTP ${response.status}`;
     throw new Error(message);
   }
   return data;
@@ -72,56 +89,85 @@ async function run(buttonId, statusId, operation) {
   }
 }
 
-$("generateBtn").addEventListener("click", () => run("generateBtn", "statusKeys", async () => {
-  const password = $("generatePassword").value;
-  if (!password.trim()) throw new Error("Wprowadź hasło do klucza prywatnego.");
-  $("generatedResults").classList.add("hidden");
-  const result = await request("/keys/generate", { password });
-  if (typeof result.public_key_pem !== "string" || typeof result.private_key_pem !== "string") {
-    throw new Error("API nie zwróciło poprawnych kluczy.");
-  }
-  $("publicKeyGenerated").value = result.public_key_pem;
-  $("privateKeyGenerated").value = result.private_key_pem;
-  $("generatedResults").classList.remove("hidden");
-}));
+$("generateBtn").addEventListener("click", () =>
+  run("generateBtn", "statusKeys", async () => {
+    const password = $("generatePassword").value;
+    if (!password.trim())
+      throw new Error("Wprowadź hasło do klucza prywatnego.");
+    $("generatedResults").classList.add("hidden");
+    const result = await request("/keys/generate", { password });
+    if (
+      typeof result.public_key_pem !== "string" ||
+      typeof result.private_key_pem !== "string"
+    ) {
+      throw new Error("API nie zwróciło poprawnych kluczy.");
+    }
+    $("publicKeyGenerated").value = result.public_key_pem;
+    $("privateKeyGenerated").value = result.private_key_pem;
+    $("generatedResults").classList.remove("hidden");
+  }),
+);
 
-$("encryptBtn").addEventListener("click", () => run("encryptBtn", "statusEn", async () => {
-  const public_key_pem = $("keyEn").value.trim();
-  const message = $("messageEn").value;
-  if (!public_key_pem) throw new Error("Wprowadź klucz publiczny.");
-  if (!message.trim()) throw new Error("Wpisz wiadomość do zaszyfrowania.");
-  $("encryptResults").classList.add("hidden");
-  const result = await request("/encrypt", { public_key_pem, message });
-  if (!fields.every((field) => typeof result[field] === "string")) {
-    throw new Error("API zwróciło niekompletne dane szyfrogramu.");
-  }
-  const encrypted = Object.fromEntries(fields.map((field) => [field, result[field]]));
-  $("resultEn").value = JSON.stringify(encrypted, null, 2);
-  $("encryptResults").classList.remove("hidden");
-}));
+$("encryptBtn").addEventListener("click", () =>
+  run("encryptBtn", "statusEn", async () => {
+    const public_key_pem = $("keyEn").value.trim();
+    const message = $("messageEn").value;
+    if (!public_key_pem) throw new Error("Wprowadź klucz publiczny.");
+    if (!message.trim()) throw new Error("Wpisz wiadomość do zaszyfrowania.");
+    $("encryptResults").classList.add("hidden");
+    const result = await request("/encrypt", { public_key_pem, message });
+    if (!fields.every((field) => typeof result[field] === "string")) {
+      throw new Error("API zwróciło niekompletne dane szyfrogramu.");
+    }
+    const encrypted = Object.fromEntries(
+      fields.map((field) => [field, result[field]]),
+    );
+    $("resultEn").value = JSON.stringify(encrypted, null, 2);
+    $("encryptResults").classList.remove("hidden");
+  }),
+);
 
-$("decryptBtn").addEventListener("click", () => run("decryptBtn", "statusDe", async () => {
-  const private_key_pem = $("keyDe").value.trim();
-  const password = $("decryptPassword").value;
-  const content = $("messageDe").value.trim();
-  if (!private_key_pem) throw new Error("Wprowadź klucz prywatny.");
-  if (!password.trim()) throw new Error("Wprowadź hasło klucza prywatnego.");
-  if (!content) throw new Error("Wklej zaszyfrowane dane JSON.");
-  let encrypted;
-  try { encrypted = JSON.parse(content); } catch { throw new Error("Zaszyfrowane dane muszą być poprawnym JSON-em."); }
-  if (!encrypted || Array.isArray(encrypted) || typeof encrypted !== "object" ||
-      !fields.every((field) => typeof encrypted[field] === "string" && encrypted[field].length > 0)) {
-    throw new Error("JSON musi zawierać: ciphertext, nonce, salt i ephemeral_public_key.");
-  }
-  $("decryptResults").classList.add("hidden");
-  const result = await request("/decrypt", {
-    private_key_pem, password,
-    encrypted: Object.fromEntries(fields.map((field) => [field, encrypted[field]]))
-  });
-  if (typeof result.message !== "string") throw new Error("API nie zwróciło wiadomości.");
-  $("resultDe").value = result.message;
-  $("decryptResults").classList.remove("hidden");
-}));
+$("decryptBtn").addEventListener("click", () =>
+  run("decryptBtn", "statusDe", async () => {
+    const private_key_pem = $("keyDe").value.trim();
+    const password = $("decryptPassword").value;
+    const content = $("messageDe").value.trim();
+    if (!private_key_pem) throw new Error("Wprowadź klucz prywatny.");
+    if (!password.trim()) throw new Error("Wprowadź hasło klucza prywatnego.");
+    if (!content) throw new Error("Wklej zaszyfrowane dane JSON.");
+    let encrypted;
+    try {
+      encrypted = JSON.parse(content);
+    } catch {
+      throw new Error("Zaszyfrowane dane muszą być poprawnym JSON-em.");
+    }
+    if (
+      !encrypted ||
+      Array.isArray(encrypted) ||
+      typeof encrypted !== "object" ||
+      !fields.every(
+        (field) =>
+          typeof encrypted[field] === "string" && encrypted[field].length > 0,
+      )
+    ) {
+      throw new Error(
+        "JSON musi zawierać: ciphertext, nonce, salt i ephemeral_public_key.",
+      );
+    }
+    $("decryptResults").classList.add("hidden");
+    const result = await request("/decrypt", {
+      private_key_pem,
+      password,
+      encrypted: Object.fromEntries(
+        fields.map((field) => [field, encrypted[field]]),
+      ),
+    });
+    if (typeof result.message !== "string")
+      throw new Error("API nie zwróciło wiadomości.");
+    $("resultDe").value = result.message;
+    $("decryptResults").classList.remove("hidden");
+  }),
+);
 
 $("usePublicBtn").addEventListener("click", () => {
   $("keyEn").value = $("publicKeyGenerated").value;
@@ -145,8 +191,12 @@ document.querySelectorAll("[data-copy]").forEach((button) => {
       await navigator.clipboard.writeText(value);
       const original = button.textContent;
       button.textContent = "Skopiowano";
-      setTimeout(() => { button.textContent = original; }, 1400);
-    } catch { button.textContent = "Nie udało się skopiować"; }
+      setTimeout(() => {
+        button.textContent = original;
+      }, 1400);
+    } catch {
+      button.textContent = "Nie udało się skopiować";
+    }
   });
 });
 document.querySelectorAll("[data-toggle-password]").forEach((button) => {
