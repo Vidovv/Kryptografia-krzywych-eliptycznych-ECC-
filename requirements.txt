@@ -2,3 +2,4 @@ cryptography
 pytest
 fastapi
 httpx
+python-multipart
