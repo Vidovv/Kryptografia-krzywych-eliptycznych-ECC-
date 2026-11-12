@@ -103,3 +103,51 @@ def decrypt_endpoint(data: DecryptRequest):
         )
 
     return DecryptResponse(message=message)
+# Interfejs do szyfrowania dowolnych plików (JSON + Base64).
+# Oddzielony od istniejących endpointów tekstowych.
+from pathlib import Path
+from fastapi.responses import FileResponse
+from file_crypto import MAX_FILE_SIZE, encrypt_file_bytes, decrypt_file_bytes, unb64, b64
+
+class EncryptFileRequest(BaseModel):
+    public_key_pem: str
+    filename: str
+    file_base64: str
+
+class DecryptFileRequest(BaseModel):
+    private_key_pem: str
+    password: str
+    encrypted: dict
+
+@app.post('/api/files/encrypt')
+def encrypt_file_endpoint(data: EncryptFileRequest):
+    try:
+        content = unb64(data.file_base64)
+        if len(content) > MAX_FILE_SIZE:
+            raise ValueError('Plik jest zbyt duży (maksymalnie 15 MB).')
+        public_key = deserialize_public_key(data.public_key_pem.encode('utf-8'))
+        return encrypt_file_bytes(content, public_key, data.filename)
+    except (ValueError, TypeError, KeyError) as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+@app.post('/api/files/decrypt')
+def decrypt_file_endpoint(data: DecryptFileRequest):
+    try:
+        private_key = deserialize_private_key(data.private_key_pem.encode('utf-8'), data.password)
+        filename, content = decrypt_file_bytes(data.encrypted, private_key)
+        return {'filename': filename, 'file_base64': b64(content)}
+    except (InvalidTag, ValueError, TypeError, KeyError):
+        raise HTTPException(status_code=400, detail='Nie udało się odszyfrować pliku. Sprawdź klucz, hasło i plik .ecc.')
+
+# Strona i zasoby frontendowe dostępne z tego samego serwera.
+ROOT = Path(__file__).resolve().parent
+@app.get('/')
+def homepage():
+    return FileResponse(ROOT / 'index.html')
+@app.get('/assets/style.css')
+def frontend_css():
+    return FileResponse(ROOT / 'style.css', media_type='text/css')
+
+@app.get('/assets/script.js')
+def frontend_js():
+    return FileResponse(ROOT / 'script.js', media_type='application/javascript')
