@@ -9,9 +9,17 @@ from key_generator import (
     verify_keys,
 )
 from encryption import encrypt_message, decrypt_message
+import io
+import zipfile
+from fastapi import UploadFile, File, Form
+from fastapi.responses import StreamingResponse
+from cryptography.exceptions import InvalidTag
+from file_format import encrypt_file_data, decrypt_file_data
 
 app = FastAPI(title="SeminariaProjekt API")
-
+class ExportKeysRequest(BaseModel):
+    private_key: str
+    public_key: str
 class GenerateKeysRequest(BaseModel):
     password: str
 
@@ -45,6 +53,162 @@ class DecryptRequest(BaseModel):
 class DecryptResponse(BaseModel):
     message: str
 
+    @app.post("/files/encrypt")
+    async def encrypt_file(
+            file: UploadFile = File(...),
+            public_key_pem: str = Form(...)
+    ):
+        try:
+
+            public_key = deserialize_public_key(
+                public_key_pem.encode("utf-8")
+            )
+
+
+            data = await file.read()
+
+
+            encrypted = encrypt_file_data(data, public_key)
+
+            filename = (file.filename or "plik") + ".ecc"
+
+
+            return StreamingResponse(
+                io.BytesIO(encrypted),
+                media_type="application/octet-stream",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "Cache-Control": "no-store"
+                }
+            )
+
+        except (ValueError, TypeError):
+            raise HTTPException(
+                status_code=400,
+                detail="Nieprawidłowy klucz publiczny lub dane."
+            )
+
+
+@app.post("/files/decrypt")
+async def decrypt_file(
+    file: UploadFile = File(...),
+    private_key_pem: str = Form(...),
+    password: str = Form(...)
+):
+    try:
+
+        private_key = deserialize_private_key(
+            private_key_pem.encode("utf-8"),
+            password
+        )
+
+
+        data = await file.read()
+
+
+        decrypted = decrypt_file_data(data, private_key)
+
+        filename = file.filename or "plik.ecc"
+
+        if filename.endswith(".ecc"):
+            filename = filename[:-4]
+
+        return StreamingResponse(
+            io.BytesIO(decrypted),
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Cache-Control": "no-store"
+            }
+        )
+
+    except (InvalidTag, ValueError, TypeError, KeyError):
+        raise HTTPException(
+            status_code=400,
+            detail="Nie udało się odszyfrować pliku."
+        )
+
+
+@app.post("/keys/export")
+def export_keys(request: ExportKeysRequest):
+
+    print("Czy nagłówek jest poprawny:",
+          request.private_key.strip().startswith(
+              "-----BEGIN ENCRYPTED PRIVATE KEY-----"
+          ))
+
+    if not request.private_key.strip().startswith(
+        "-----BEGIN ENCRYPTED PRIVATE KEY-----"
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Klucz prywatny musi zostać zabezpieczony hasłem"
+        )
+
+    print("Walidacja nagłówka zakończona")
+
+    buffer = io.BytesIO()
+
+    print("Rozpoczynam tworzenie ZIP")
+
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("private_key.pem", request.private_key)
+        archive.writestr("public_key.pem", request.public_key)
+
+    buffer.seek(0)
+
+    print("ZIP został utworzony poprawnie")
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": 'attachment; filename="ecc_keys.zip"'
+        }
+    )
+@app.post("/keys/import")
+async def import_keys(
+    private_file: UploadFile = File(...),
+    public_file: UploadFile = File(...),
+    password: str = Form(...)
+):
+    try:
+
+        private_pem = await private_file.read()
+        public_pem = await public_file.read()
+
+
+        private_key = deserialize_private_key(
+            private_pem, password
+        )
+
+        public_key = deserialize_public_key(
+            public_pem
+        )
+
+
+        if (
+            private_key.curve.name != "secp256k1"
+            or public_key.curve.name != "secp256k1"
+        ):
+            raise ValueError("Nieprawidłowa krzywa ECC")
+
+
+        if not verify_keys(private_key, public_key):
+            raise ValueError("Klucze nie są zgodne")
+
+
+        return {
+            "message": "Klucze zaimportowane poprawnie",
+            "private_key": private_pem.decode("utf-8"),
+            "public_key": public_pem.decode("utf-8")
+        }
+
+    except (ValueError, TypeError, AttributeError, UnicodeError):
+        raise HTTPException(
+            status_code=400,
+            detail="Nieprawidłowe pliki PEM, hasło lub para kluczy."
+        )
 @app.post("/keys/generate", response_model=KeysResponse)
 def generate_keys_endpoint(data: GenerateKeysRequest):
     if not data.password:

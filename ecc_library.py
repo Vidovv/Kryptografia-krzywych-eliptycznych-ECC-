@@ -4,6 +4,70 @@ class ECCPoint:
         self.y = y
         self.is_infinity = is_infinity
 
+    def to_bytes(self, compressed=False) -> bytes:
+        """Konwertuje punkt na format binarny SEC 1."""
+        if self.is_infinity:
+            return b"\x00"  
+
+      
+        x_bytes = self.x.to_bytes(32, byteorder='big')
+
+        if compressed:
+            
+            prefix = b"\x02" if self.y % 2 == 0 else b"\x03"
+            return prefix + x_bytes
+        else:
+            y_bytes = self.y.to_bytes(32, byteorder='big')
+            return b"\x04" + x_bytes + y_bytes
+
+    def to_hex(self, compressed=False) -> str:
+        """Konwertuje punkt na ciąg znaków Hex."""
+        return self.to_bytes(compressed).hex()
+
+    @classmethod
+    def from_bytes(cls, data: bytes):
+        """Odtwarza obiekt ECCPoint z surowych bajtów SEC 1."""
+        if not data:
+            raise ValueError("Brak danych do deserializacji")
+
+        prefix = data[0]
+
+        if prefix == 0x00:
+            return cls(is_infinity=True)
+
+        if prefix == 0x04:
+            
+            if len(data) != 65:
+                raise ValueError("Nieprawidłowa długość danych dla formatu nieskompresowanego")
+            x = int.from_bytes(data[1:33], byteorder='big')
+            y = int.from_bytes(data[33:65], byteorder='big')
+            return cls(x, y)
+
+        elif prefix in (0x02, 0x03):
+            if len(data) != 33:
+                raise ValueError("Nieprawidłowa długość danych dla formatu skompresowanego")
+            x = int.from_bytes(data[1:33], byteorder='big')
+
+            
+            p = 115792089237316195423570985008687907853269984665640564039457584007908834671663
+            b = 7
+            y_squared = (pow(x, 3, p) + b) % p
+
+            y = pow(y_squared, (p + 1) // 4, p)
+
+            
+            if (prefix == 0x02 and y % 2 != 0) or (prefix == 0x03 and y % 2 == 0):
+                y = p - y
+
+            return cls(x, y)
+        else:
+            raise ValueError(f"Nieznany prefix formatu SEC 1: {hex(prefix)}")
+
+    @classmethod
+    def from_hex(cls, hex_str: str):
+        """Odtwarza obiekt ECCPoint z ciągu znaków Hex."""
+        return cls.from_bytes(bytes.fromhex(hex_str))
+
     def __str__(self):
         if self.is_infinity: return "Punkt w nieskończoności"
         return f"({self.x}, {self.y})"
