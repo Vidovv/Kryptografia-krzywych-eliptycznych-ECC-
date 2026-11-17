@@ -36,4 +36,9 @@ def test_double_point_with_y_zero_returns_infinity():
 
 
 def test_multiplication_by_two_matches_point_doubling():
-    assert curve.multiply(G, 2) == curve.double_point(G)
+    multiplied = curve.multiply(G, 2)
+    doubled = curve.double_point(G)
+
+    assert multiplied.is_infinity == doubled.is_infinity
+    assert multiplied.x == doubled.x
+    assert multiplied.y == doubled.y
