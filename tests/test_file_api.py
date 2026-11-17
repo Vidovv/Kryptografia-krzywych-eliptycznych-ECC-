@@ -196,3 +196,47 @@ def test_import_keys_rejects_mismatched_pair():
     )
 
     assert response.status_code == 400
+    
+def test_json_file_api_rejects_wrong_password():
+    from key_generator import serialize_keys
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    password = "correct-password"
+    private_key = ec.generate_private_key(ec.SECP256K1())
+    public_key = private_key.public_key()
+    private_pem, public_pem = serialize_keys(
+        private_key, public_key, password
+    )
+
+    encrypted_response = client.post(
+        "/api/files/encrypt",
+        json={
+            "public_key_pem": public_pem.decode("utf-8"),
+            "filename": "sample.bin",
+            "file_base64": "dGVzdA==",
+        },
+    )
+    assert encrypted_response.status_code == 200
+
+    response = client.post(
+        "/api/files/decrypt",
+        json={
+            "private_key_pem": private_pem.decode("utf-8"),
+            "password": "wrong-password",
+            "encrypted": encrypted_response.json(),
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_upload_file_api_rejects_invalid_public_key():
+    response = client.post(
+        "/files/encrypt",
+        data={"public_key_pem": "not a PEM key"},
+        files={
+            "file": ("sample.bin", b"test content", "application/octet-stream"),
+        },
+    )
+
+    assert response.status_code == 400
