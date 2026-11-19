@@ -13,18 +13,26 @@ function switchTab(name) {
 }
 document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
 
-function switchAbout(name) {
-  document.querySelectorAll('[data-about]').forEach(button => {
-    const active = button.dataset.about === name;
+// Nawigacja w Generatorze kluczy działa niezależnie od wizualizacji matematycznej.
+function switchKeyView(selected) {
+  const views = ['pem', 'publiczny', 'prywatny'];
+  if (!views.includes(selected)) return;
+  document.querySelectorAll('[data-keyview]').forEach(button => {
+    const active = button.dataset.keyview === selected;
     button.classList.toggle('active', active);
     button.setAttribute('aria-selected', String(active));
     button.tabIndex = active ? 0 : -1;
   });
-  for (const key of ['opis', 'publiczny', 'prywatny']) {
-    $('about-' + key).classList.toggle('hidden', key !== name);
-  }
+  views.forEach(name => {
+    const panel = $('keyview-' + name);
+    if (panel) panel.classList.toggle('hidden', name !== selected);
+  });
 }
-document.querySelectorAll('[data-about]').forEach(button => button.addEventListener('click', () => switchAbout(button.dataset.about)));
+document.querySelectorAll('[data-keyview]').forEach(button => {
+  button.addEventListener('click', () => switchKeyView(button.dataset.keyview));
+});
+
+
 
 
 function setStatus(id, message, type = '') {

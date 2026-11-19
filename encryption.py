@@ -9,7 +9,7 @@ from ecc_library import curve, ECCPoint
 from ecdh import generate_shared_secret, derive_aes_key
 from key_generator import load_keys
 
-def encrypt_bytes(data: bytes, public_key, aad=None):
+def encrypt_message(message, public_key):
 
     ephemeral_private = ec.generate_private_key(ec.SECP256K1())
     ephemeral_public = ephemeral_private.public_key()
@@ -27,7 +27,9 @@ def encrypt_bytes(data: bytes, public_key, aad=None):
     nonce = os.urandom(12)
     aesgcm = AESGCM(aes_key)
 
-    ciphertext = aesgcm.encrypt(nonce, data, aad)
+    ciphertext = aesgcm.encrypt(
+        nonce, message.encode("utf-8"), None
+    )
 
 
     ephemeral_bytes = ephemeral_public.public_bytes(
@@ -44,7 +46,7 @@ def encrypt_bytes(data: bytes, public_key, aad=None):
     }
 
 
-def decrypt_bytes(encrypted_data, private_key, aad=None):
+def decrypt_message(encrypted_data, private_key):
 
 
     ciphertext = base64.b64decode(encrypted_data["ciphertext"])
@@ -70,17 +72,21 @@ def decrypt_bytes(encrypted_data, private_key, aad=None):
 
 
     aesgcm = AESGCM(aes_key)
-    plaintext = aesgcm.decrypt(nonce, ciphertext, aad)
+    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
 
-    return plaintext
-
-def encrypt_message(message, public_key):
-    return encrypt_bytes(
-        message.encode("utf-8"),
-        public_key
-    )
-
-
-def decrypt_message(encrypted_data, private_key):
-    plaintext = decrypt_bytes(encrypted_data, private_key)
     return plaintext.decode("utf-8")
+
+
+if __name__ == "__main__":
+    from key_generator import generate_keys
+
+    private_key, public_key, *_ = generate_keys()
+
+    message = "Test szyfrowania ECC"
+
+    encrypted = encrypt_message(message, public_key)
+    decrypted = decrypt_message(encrypted, private_key)
+
+    print("Wiadomość:", message)
+    print("Odszyfrowano:", decrypted)
+    print("Czy wiadomości są zgodne?", message == decrypted)

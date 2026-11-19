@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ECC | Szyfrowanie plików</title>
-  <link rel="stylesheet" href="/assets/style.css">
-  <script defer src="/assets/script.js"></script>
+  <link rel="stylesheet" href="/assets/style.css?v=secp256k1-4">
+  <script defer src="/assets/script.js?v=secp256k1-4"></script>
+  
 </head>
 <body>
   <main class="container">
@@ -18,13 +19,8 @@
     </nav>
     <section class="panel" id="panel-about" role="tabpanel" aria-labelledby="tab-about">
       <h1>Jak działa kryptografia ECC?</h1>
-      <p class="muted">Od idei kryptografii krzywych eliptycznych do obliczenia klucza publicznego i próby odnalezienia prywatnego.</p>
-      <nav class="about-tabs" aria-label="Podzakładki About" role="tablist">
-        <button class="about-tab active" type="button" data-about="opis" role="tab" id="about-tab-opis" aria-controls="about-opis" aria-selected="true">Opis działania</button>
-        <button class="about-tab" type="button" data-about="publiczny" role="tab" id="about-tab-publiczny" aria-controls="about-publiczny" aria-selected="false">Wyznaczanie klucza publicznego</button>
-        <button class="about-tab" type="button" data-about="prywatny" role="tab" id="about-tab-prywatny" aria-controls="about-prywatny" aria-selected="false">Poszukiwanie klucza prywatnego</button>
-      </nav>
-      <div id="about-opis" class="about-content" role="tabpanel" aria-labelledby="about-tab-opis">
+      <p class="muted">Podstawy matematyczne oraz sposób wykorzystania ECC do zabezpieczania plików.</p>
+      <div class="about-content">
         <h2>Podstawy ECC</h2>
         <p>Kryptografia krzywych eliptycznych wykorzystuje matematyczne zależności między punktami na krzywej eliptycznej. W kryptografii pracujemy nad <strong>skończonym polem</strong>, dlatego punkty tworzą dyskretny zbiór, a nie ciągłą linię.</p>
         <div class="formula">y² ≡ x³ + ax + b (mod p)</div>
@@ -38,54 +34,19 @@
         <h2>Co oznacza dodawanie punktów?</h2>
         <p>Geometrycznie suma dwóch różnych punktów wiąże się z prostą przechodzącą przez nie, a podwojenie punktu – ze styczną. W polu skończonym odpowiadają im <strong>działania modularne</strong> na współrzędnych.</p>
         <div class="info"><strong>Jak to wykorzystuje ta aplikacja?</strong><p>Generujemy parę kluczy ECC. Przy szyfrowaniu używamy efemerycznego klucza i ECDH do uzyskania wspólnego sekretu, z którego wyprowadzany jest klucz AES-256. Zawartość pliku szyfruje AES-GCM. Do odszyfrowania potrzebny jest odpowiedni klucz prywatny i hasło do jego pliku PEM.</p></div>
-        <p class="note">W kolejnych podzakładkach wykorzystujemy niewielką krzywą edukacyjną. Nie nadaje się ona do rzeczywistego zabezpieczania danych.</p>
+        <p class="note">W zakładce Generator kluczy prezentujemy rzeczywiste działania nad secp256k1, z pomocniczym schematem geometrii krzywej nad liczbami rzeczywistymi.</p>
       </div>
-      <div id="about-publiczny" class="about-content hidden" role="tabpanel" aria-labelledby="about-tab-publiczny">
-        <h2>Perspektywa właściciela klucza prywatnego</h2>
-        <p>Znamy <strong>d = 5</strong>, dlatego możemy szybko obliczyć klucz publiczny <strong>P = 5G</strong> metodą double-and-add.</p>
-        <div class="parameters"><span>Krzywa: <strong>y² ≡ x³ + 2x + 2 (mod 17)</strong></span><span>Punkt bazowy: <strong>G = (5, 1)</strong></span><span>Klucz prywatny: <strong>d = 5</strong></span></div>
-        <h3>Krok 1. Rozkład liczby na bity</h3>
-        <div class="formula">5₁₀ = 101₂ = 4 + 1<br>P = 5G = 4G + G</div>
-        <p>Wystarczy więc obliczyć <code>2G</code>, następnie <code>4G</code> i dodać <code>G</code>. Bit odpowiadający <code>2G</code> ma wartość 0, więc nie uwzględniamy tego punktu w końcowej sumie.</p>
-        <h3>Krok 2. Podwojenie G: obliczamy 2G</h3>
-        <p>Przy podwajaniu punktu <code>(x, y)</code> nachylenie wyznaczamy ze wzoru:</p>
-        <div class="formula">λ ≡ (3x² + a) · (2y)⁻¹ (mod p)<br>x₃ ≡ λ² − 2x (mod p)<br>y₃ ≡ λ(x − x₃) − y (mod p)</div>
-        <div class="formula">λ ≡ (3 · 5² + 2) · 2⁻¹ ≡ 77 · 9 ≡ 13 (mod 17)<br>x₃ ≡ 13² − 10 ≡ 6 (mod 17)<br>y₃ ≡ 13(5 − 6) − 1 ≡ 3 (mod 17)</div>
-        <p class="result">2G = (6, 3)</p>
-        <h3>Krok 3. Podwojenie 2G: obliczamy 4G</h3>
-        <div class="formula">λ ≡ (3 · 6² + 2) · 6⁻¹ ≡ 110 · 3 ≡ 7 (mod 17)<br>x₃ ≡ 7² − 2 · 6 ≡ 3 (mod 17)<br>y₃ ≡ 7(6 − 3) − 3 ≡ 1 (mod 17)</div>
-        <p class="result">4G = (3, 1)</p>
-        <h3>Krok 4. Dodajemy 4G + G</h3>
-        <p>Dla dwóch różnych punktów <code>A = (x₁, y₁)</code> i <code>B = (x₂, y₂)</code> stosujemy:</p>
-        <div class="formula">λ ≡ (y₂ − y₁) · (x₂ − x₁)⁻¹ (mod p)<br>x₃ ≡ λ² − x₁ − x₂ (mod p)<br>y₃ ≡ λ(x₁ − x₃) − y₁ (mod p)</div>
-        <div class="formula">A = (3, 1), B = (5, 1)<br>λ ≡ (1 − 1) · (5 − 3)⁻¹ ≡ 0 (mod 17)<br>x₃ ≡ 0 − 3 − 5 ≡ 9 (mod 17)<br>y₃ ≡ 0 · (3 − 9) − 1 ≡ 16 (mod 17)</div>
-        <p class="result">Klucz publiczny: P = 5G = (9, 16)</p>
-        <p class="note">Symbol ⁻¹ oznacza odwrotność modularną, a nie zwykłe dzielenie. Np. 2⁻¹ ≡ 9 (mod 17), ponieważ 2 · 9 ≡ 1 (mod 17).</p>
-      </div>
-      <div id="about-prywatny" class="about-content hidden" role="tabpanel" aria-labelledby="about-tab-prywatny">
-        <h2>Perspektywa osoby znającej wyłącznie dane publiczne</h2>
-        <p>Osoba próbująca odtworzyć klucz prywatny zna krzywą, punkt bazowy <strong>G = (5, 1)</strong> oraz klucz publiczny <strong>P = (9, 16)</strong>, ale <strong>nie zna d</strong>.</p>
-        <div class="formula">P = dG = (9, 16)<br>Szukamy nieznanego d</div>
-        <p>W niewielkim przykładzie możemy testować kolejne wielokrotności punktu G, aż znajdziemy punkt równy P. To metoda prób kolejnych wartości (brute force).</p>
-        <div class="trial-list">
-          <div><span>Próba 1</span><strong>1G = (5, 1)</strong><em>≠ P</em></div>
-          <div><span>Próba 2</span><strong>2G = (6, 3)</strong><em>≠ P</em></div>
-          <div><span>Próba 3</span><strong>3G = (10, 6)</strong><em>≠ P</em></div>
-          <div><span>Próba 4</span><strong>4G = (3, 1)</strong><em>≠ P</em></div>
-          <div class="trial-found"><span>Próba 5</span><strong>5G = (9, 16)</strong><em>= P ✓</em></div>
-        </div>
-        <h3>Jak policzyć punkty po kolei?</h3>
-        <p>Stosujemy te same wzory modularne co w poprzedniej podzakładce, lecz zamiast rozkładać znane <code>d</code> na bity, sprawdzamy kolejne wielokrotności:</p>
-        <div class="formula">2G = G + G = (6, 3)<br>3G = 2G + G = (10, 6)<br>4G = 3G + G = (3, 1)<br>5G = 4G + G = (9, 16)</div>
-        <details><summary>Pokaż obliczenie 3G = 2G + G</summary><div class="formula">A = (6, 3), B = (5, 1)<br>λ ≡ (1 − 3) · (5 − 6)⁻¹ ≡ (−2) · (−1) ≡ 2 (mod 17)<br>x₃ ≡ 2² − 6 − 5 ≡ 10 (mod 17)<br>y₃ ≡ 2(6 − 10) − 3 ≡ 6 (mod 17)</div><p><strong>3G = (10, 6)</strong></p></details>
-        <h3>Dlaczego jest to trudne w praktyce?</h3>
-        <p>Wiedząc, ile razy dodać G, łatwo wyznaczyć P. Znając tylko G i P, trzeba rozwiązać <strong>problem dyskretnego logarytmu na krzywej eliptycznej (ECDLP)</strong>. W rzeczywistych krzywych liczba możliwych wartości jest ogromna; proste sprawdzanie kolejnych punktów jest niepraktyczne. Istnieją szybsze metody ataku niż kolejne dodawanie, ale dla poprawnie dobranych parametrów nadal pozostają obliczeniowo niewykonalne.</p>
-        <div class="info"><strong>Wniosek</strong><p>Ten przykład jest celowo mały: klucz prywatny <strong>d = 5</strong> można odnaleźć w kilku próbach. Właśnie różnica między łatwością obliczenia <code>P = dG</code> a trudnością odzyskania <code>d</code> dla dużych parametrów stanowi podstawę bezpieczeństwa ECC.</p></div>
-      </div>
+      <p class="note">Interaktywne obliczenia klucza publicznego i próby odzyskania prywatnego znajdują się teraz w zakładce <strong>Generator kluczy</strong>.</p>
     </section>
     <section class="panel hidden" id="panel-keys" role="tabpanel" aria-labelledby="tab-keys">
       <h1>Generator kluczy ECC</h1>
       <p class="muted">Utwórz parę kluczy: publiczny do szyfrowania i prywatny do odszyfrowywania. Klucz prywatny zostanie zabezpieczony podanym hasłem.</p>
+      <nav class="about-tabs" aria-label="Części generatora" role="tablist">
+        <button class="about-tab active" type="button" data-keyview="pem" role="tab" aria-selected="true">Generator PEM</button>
+        <button class="about-tab" type="button" data-keyview="publiczny" role="tab" aria-selected="false">Wyznaczanie klucza publicznego</button>
+        <button class="about-tab" type="button" data-keyview="prywatny" role="tab" aria-selected="false">Odgadywanie klucza prywatnego</button>
+      </nav>
+      <div id="keyview-pem" class="keyview">
       <form id="keyForm">
         <label for="keyPassword">Hasło do klucza prywatnego</label>
         <input id="keyPassword" type="password" autocomplete="new-password" required placeholder="Wprowadź hasło">
@@ -102,6 +63,19 @@
         <textarea id="generatedPrivate" rows="9" readonly spellcheck="false"></textarea>
         <button class="secondary" type="button" id="usePrivate">Użyj do odszyfrowywania</button>
         <p class="note">Zapisz klucz prywatny oraz hasło. Nie udostępniaj ich innym osobom. Po odświeżeniu strony wygenerowane klucze znikną z formularza.</p>
+      </div>
+      </div>
+      <div id="keyview-publiczny" class="keyview hidden">
+        <h2>Obliczanie klucza publicznego — secp256k1</h2>
+        <p>Znamy sekret <strong>d = 5</strong>. Algorytm double-and-add oblicza <strong>P = 5G = 4G + G</strong> za pomocą dwóch podwojeń i jednego dodawania.</p>
+        <div class="parameters"><span>Krzywa: <strong>y² ≡ x³ + 7 (mod p)</strong></span><span>Skalar: <strong>d = 5 = 101₂</strong></span></div>
+        <div id="publicWalkthrough" class="ecc-walkthrough"><p>Ładowanie obliczeń: 2G → 4G → 5G…</p></div>
+      </div>
+      <div id="keyview-prywatny" class="keyview hidden">
+        <h2>Próba odnalezienia klucza prywatnego — secp256k1</h2>
+        <p>Znając tylko <strong>G</strong> i <strong>P = 5G</strong>, sprawdzamy kolejno <strong>G, 2G, 3G…</strong>. Mały sekret d = 5 służy wyłącznie demonstracji; w rzeczywistych zastosowaniach losuje się znacznie większy.</p>
+        <div id="privateWalkthrough" class="ecc-walkthrough"><p>Ładowanie prób: G → 2G → 3G → 4G → 5G…</p></div>
+        <div class="info"><strong>Ważne:</strong><p>Sprawdzanie kolejnych wielokrotności to jedynie przykład brute force. Dla losowego klucza secp256k1 takie wyszukiwanie jest niewykonalne w praktyce; istnieją też szybsze ataki, np. Pollard rho, ale wciąż są obliczeniowo nieosiągalne dla poprawnie wygenerowanych kluczy.</p></div>
       </div>
     </section>
     <section class="panel hidden" id="panel-encrypt" role="tabpanel" aria-labelledby="tab-encrypt">
@@ -125,5 +99,131 @@
     </section>
     <footer>ECC · Projekt demonstracyjno-edukacyjny</footer>
   </main>
+<script>
+'use strict';
+// Wyłącznie edukacyjne działania na publicznym G i małej przykładowej wartości d=5.
+// Operacje modularne liczone dokładnie jako BigInt (bez konwersji do Number).
+(() => {
+  const p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
+  const G = {
+    x: 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n,
+    y: 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n,
+  };
+  const mod = a => (a % p + p) % p;
+  const inv = a => {
+    let t = 0n, nt = 1n, r = p, nr = mod(a);
+    while (nr) { const q = r / nr; [t, nt] = [nt, t - q * nt]; [r, nr] = [nr, r - q * nr]; }
+    if (r !== 1n) throw Error('Brak odwrotności modularnej');
+    return mod(t);
+  };
+  const add = (A, B) => {
+    if (!A) return {result:B, lambda:null, action:'neutral'};
+    if (!B) return {result:A, lambda:null, action:'neutral'};
+    if (A.x === B.x && mod(A.y + B.y) === 0n) return {result:null,lambda:null, action:'infinity'};
+    const double = A.x === B.x && A.y === B.y;
+    const numerator = double ? 3n * A.x * A.x : B.y - A.y;
+    const denominator = double ? 2n * A.y : B.x - A.x;
+    const lambda = mod(numerator * inv(denominator));
+    const x = mod(lambda * lambda - A.x - B.x);
+    const y = mod(lambda * (A.x - x) - A.y);
+    return {result:{x,y},lambda,action:double?'double':'add',numerator,denominator};
+  };
+  const multiples = [null,G];
+  for(let i=2;i<=5;i++) multiples.push(add(multiples[i-1],G).result);
+  const publicSteps = [
+    {title:'Krok 1 · Podwojenie G',A:G,B:G,out:multiples[2],calculation:add(G,G),result:'2G'},
+    {title:'Krok 2 · Podwojenie 2G',A:multiples[2],B:multiples[2],out:multiples[4],calculation:add(multiples[2],multiples[2]),result:'4G'},
+    {title:'Krok 3 · Dodanie 4G + G',A:multiples[4],B:G,out:multiples[5],calculation:add(multiples[4],G),result:'5G = P'},
+  ];
+  const privateSteps = [
+    {title:'Próba 1 · Sprawdzamy G',A:null,B:null,out:G,calculation:null,result:'1G'},
+    ...[2,3,4,5].map(i=>({title:`Próba ${i} · ${i-1}G + G`,A:multiples[i-1],B:G,out:multiples[i],calculation:add(multiples[i-1],G),result:`${i}G`})),
+  ];
+  const current = {publiczny:0, prywatny:0};
+  const hex = value => '0x'+value.toString(16).toUpperCase().padStart(64,'0');
+  const short = value => hex(value).slice(0,15)+'…'+hex(value).slice(-10);
+  const labelPoint = (point,name) => `<div><strong>${name}</strong> · x = ${hex(point.x)}<br>y = ${hex(point.y)}</div>`;
+  // Rysunek na krzywej rzeczywistej y²=x³+7 stanowi analogię geometrii grupy.
+  // Nie pokazuje rzeczywistych prostych w F_p: tam działania są modularne.
+  function geometrySVG(kind) {
+    const W=480,H=340,xMin=-2.1,xMax=3.15,yMin=-7,yMax=7;
+    const sx = x => 30+(x-xMin)/(xMax-xMin)*(W-60);
+    const sy = y => H-23-(y-yMin)/(yMax-yMin)*(H-46);
+    const Pt = x => [x,Math.sqrt(Math.max(0,x*x*x+7))];
+    const A=Pt(1), B=kind==='double'?A:Pt(2);
+    const m=kind==='double'?(3*A[0]*A[0])/(2*A[1]):(B[1]-A[1])/(B[0]-A[0]);
+    const x3=m*m-A[0]-B[0], y3=m*(A[0]-x3)-A[1];
+    const T=[x3,y3], R=[x3,-y3];
+    const curvePath = sign => {
+      let path='';
+      for(let i=0;i<=220;i++) {
+        const x=-Math.cbrt(7)+ (xMax+Math.cbrt(7))*i/220;
+        const y=sign*Math.sqrt(Math.max(0,x*x*x+7));
+        path+=(i?'L':'M')+sx(x).toFixed(2)+' '+sy(y).toFixed(2)+' ';
+      }
+      return path;
+    };
+    const circle=(point,text,color,dx=9,dy=-9)=>`<circle cx="${sx(point[0])}" cy="${sy(point[1])}" r="5" fill="${color}" stroke="white" stroke-width="2"/><text x="${sx(point[0])+dx}" y="${sy(point[1])+dy}" fill="${color}" font-size="15" font-weight="700">${text}</text>`;
+    const lineY = x => m*(x-A[0])+A[1];
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Schemat: ${kind==='double'?'styczna':'sieczna'}, trzeci punkt przecięcia i odbicie">
+      <defs><clipPath id="clip-${kind}"><rect x="25" y="15" width="430" height="300"/></clipPath></defs>
+      <path d="M${sx(xMin)} ${sy(0)}H${sx(xMax)} M${sx(0)} ${sy(yMin)}V${sy(yMax)}" stroke="#d9e2ee" stroke-width="1"/>
+      <g clip-path="url(#clip-${kind})"><path d="${curvePath(1)}" fill="none" stroke="#2e70ba" stroke-width="2.5"/><path d="${curvePath(-1)}" fill="none" stroke="#2e70ba" stroke-width="2.5"/>
+      <path d="M${sx(xMin)} ${sy(lineY(xMin))} L${sx(xMax)} ${sy(lineY(xMax))}" stroke="#d37c20" stroke-width="2"/>
+      <path d="M${sx(x3)} ${sy(y3)}L${sx(x3)} ${sy(-y3)}" stroke="#188369" stroke-dasharray="6 4" stroke-width="2"/></g>
+      ${circle(A,'A','#9b376f',-20,-12)} ${kind==='add'?circle(B,'B','#9b376f',10,-10):''} ${circle(T,'T','#cb7115',8,18)} ${circle(R,'A+B','#137b60',9,-12)}
+      <text x="245" y="22" font-size="13" fill="#567087">y² = x³ + 7 (ℝ)</text>
+    </svg>`;
+  }
+  // Zbiór prawdziwych współrzędnych secp256k1: punkty na osi x/y są tylko
+  // umieszczone w kwadracie [0,p)². Nie łączymy ich mylącą euklidesową prostą.
+  const normalized = n => Number((n*100000n)/p)/100000;
+  function finiteFieldSVG(step) {
+    const W=480,H=340, margin=39, len=255;
+    const x=n=> margin+normalized(n)*len;
+    const y=n=> H-margin-normalized(n)*len;
+    const highlighted=[step.A,step.B,step.out].filter(Boolean);
+    const base=multiples.slice(1).map((v,i)=>{
+      const selected=highlighted.some(t=>t.x===v.x && t.y===v.y);
+      return `<circle cx="${x(v.x)}" cy="${y(v.y)}" r="${selected?7:4.5}" fill="${selected?'#176fbb':'#8ca8c9'}" stroke="white" stroke-width="1.5"/><text x="${x(v.x)+8}" y="${y(v.y)-7}" font-size="15" fill="#1b486f">${i+1}G</text>`;
+    }).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rzeczywiste punkty G do 5G na secp256k1, współrzędne skalowane do przedziału od 0 do p">
+      <rect x="${margin}" y="${margin}" width="${len}" height="${len}" fill="#f7faff" stroke="#a6bdd4"/>
+      <text x="${margin}" y="28" fill="#546b87" font-size="14">Rzeczywiste punkty secp256k1</text>
+      <text x="${margin}" y="${H-20}" font-size="13" fill="#5c7593">0</text><text x="${margin+len-8}" y="${H-20}" font-size="13" fill="#5c7593">p</text>
+      <text x="${margin-19}" y="${margin+5}" font-size="13" fill="#5c7593">p</text><text x="${margin+len+12}" y="${H-margin+4}" font-size="13" fill="#5c7593">x</text>
+      <text x="${margin-23}" y="${margin-9}" font-size="13" fill="#5c7593">y</text>${base}
+    </svg>`;
+  }
+  function render(mode){
+    const arr=mode==='publiczny'?publicSteps:privateSteps;
+    const i=current[mode], s=arr[i], el=document.getElementById(mode==='publiczny'?'publicWalkthrough':'privateWalkthrough');
+    if(!el)return;
+    const isGuess=mode==='prywatny';
+    const found=isGuess && i===4;
+    const operation=s.calculation;
+    const explanation=!operation?'<p>Na początku znamy publiczny punkt bazowy G, bez wykonywania dodawania.</p>':`<p>${operation.action==='double'?'Podwojenie punktu: obliczamy nachylenie stycznej za pomocą odwrotności modularnej.':'Dodanie dwóch punktów: obliczamy nachylenie siecznej za pomocą odwrotności modularnej.'}</p>
+    <div class="ecc-formula">λ ≡ ${operation.action==='double'?'(3·x₁²) · (2·y₁)⁻¹':'(y₂ − y₁) · (x₂ − x₁)⁻¹'} (mod p)<br>x₃ ≡ λ² − x₁ − x₂ (mod p)<br>y₃ ≡ λ(x₁ − x₃) − y₁ (mod p)</div>
+    <details><summary>Pokaż dokładną wartość nachylenia λ (hex)</summary><div class="ecc-hex">λ = ${hex(operation.lambda)}</div></details>`;
+    const chartKind=operation?.action==='double'?'double':'add';
+    const points=`<div class="point-info">${s.A?labelPoint(s.A,'A')+'<br>':''}${s.B?labelPoint(s.B,'B')+'<br>':''}${labelPoint(s.out,s.result)}</div>`;
+    const status=isGuess?`<p class="${found?'result':'ecc-note'}">${found?'Znaleziono: 5G = P, więc w tym demonstracyjnym przykładzie d = 5.':`${i+1}G ≠ P — sprawdzamy dalej.`}</p>`:'<p class="result">Wynik wyznaczono dokładnie w polu secp256k1 (mod p).</p>';
+    el.innerHTML=`<div class="walk-head"><span class="step-progress">Etap ${i+1} / ${arr.length}</span><div class="walk-buttons"><button type="button" class="secondary" data-prev ${i===0?'disabled':''}>Wstecz</button><button type="button" class="secondary" data-next ${i===arr.length-1?'disabled':''}>Dalej</button></div></div>
+    <h3 class="walk-step-title">${s.title}</h3>${explanation}
+    <div class="ecc-visual-grid">
+      <figure class="ecc-figure">${geometrySVG(chartKind)}<figcaption><strong>Geometria poglądowa.</strong> Styczna/sieczna → trzeci punkt T → odbicie dające sumę. Rysunek nad ℝ, nie jest wykresem operacji modulo p.</figcaption></figure>
+      <figure class="ecc-figure">${finiteFieldSVG(s)}<figcaption><strong>Dokładne punkty secp256k1.</strong> Pozycje odpowiadają współrzędnym x,y przeskalowanym z [0,p). W polu skończonym nie ma ciągłej krzywej do narysowania.</figcaption></figure>
+    </div><details><summary>Współrzędne punktów (dokładne, hex)</summary>${points}</details>${status}
+    <p class="ecc-note">Parametry: p = ${hex(p)}, a = 0, b = 7. W obu demonstracjach G jest rzeczywistym punktem bazowym secp256k1. Wszystkie obliczenia modularne wykonywane są na BigInt.</p>`;
+    el.querySelector('[data-prev]').addEventListener('click',()=>{current[mode]--;render(mode)});
+    el.querySelector('[data-next]').addEventListener('click',()=>{current[mode]++;render(mode)});
+  }
+  // Matematyczne testy spójności niezależne od wyświetlania wykresów.
+  if(mod(G.y*G.y-G.x*G.x*G.x-7n)!==0n) throw Error('G nie należy do secp256k1');
+  if(multiples[5].x!==publicSteps[2].out.x || multiples[5].y!==publicSteps[2].out.y) throw Error('Błąd 5G');
+  render('publiczny');render('prywatny');
+})();
+
+</script>
 </body>
 </html>

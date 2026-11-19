@@ -13,3 +13,11 @@
 .trial-list{display:grid;gap:8px;margin:18px 0}.trial-list>div{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;border:1px solid #e0e7ef;border-radius:6px;padding:10px 13px}.trial-list span{font-size:13px;color:#64748b}.trial-list strong{font:600 14px ui-monospace,Consolas,monospace}.trial-list em{font-style:normal;color:#ad3543}.trial-list .trial-found{background:#eaf8f2;border-color:#b4dec9}.trial-list .trial-found em{color:#18744b;font-weight:700}
 .about-content details{margin-top:15px;padding-bottom:8px}.about-content details .formula{margin-top:12px}
 @media(max-width:560px){.about-tab{flex:1 1 100%;border-radius:6px;text-align:left;padding:9px 12px}.formula{font-size:12px;padding:12px}.parameters span{width:100%}}
+
+/* Interaktywny przewodnik po secp256k1 */
+.keyview h2{font-size:19px;margin:20px 0 12px}.ecc-walkthrough{border:1px solid #dce5f1;border-radius:9px;padding:19px;margin:22px 0;background:#fbfcff}
+.walk-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.walk-head strong{color:#214f8e}.walk-buttons{display:flex;gap:8px}.walk-buttons button{margin:0}.walk-step-title{font-size:17px;margin:15px 0 7px}.ecc-formula{padding:12px;border:1px solid #d9e4f2;border-radius:6px;background:#f1f6fd;overflow-wrap:anywhere;font:13px/1.65 ui-monospace,Consolas,monospace}.ecc-hex{font:12px/1.55 ui-monospace,Consolas,monospace;overflow-wrap:anywhere}.ecc-visual-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.ecc-figure{margin:0;border:1px solid #e0e7ef;border-radius:7px;padding:9px;background:white;min-width:0}.ecc-figure svg{width:100%;height:auto;display:block}.ecc-figure figcaption{font-size:12px;color:#52647d;margin-top:8px;line-height:1.45}.ecc-note{font-size:13px;color:#576a82}.step-progress{font-size:13px;color:#68798f}.point-info{font:12px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere}.point-info strong{font-family:system-ui}
+@media(max-width:680px){.ecc-visual-grid{grid-template-columns:1fr}.ecc-walkthrough{padding:12px}}
+
+/* Ukrywanie widoków generatora bez nadpisywania przez style kart. */
+.keyview.hidden { display: none; }

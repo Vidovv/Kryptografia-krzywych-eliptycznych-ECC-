@@ -14,7 +14,6 @@ import zipfile
 from fastapi import UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from cryptography.exceptions import InvalidTag
-from file_format import encrypt_file_data, decrypt_file_data
 
 app = FastAPI(title="SeminariaProjekt API")
 class ExportKeysRequest(BaseModel):
@@ -52,82 +51,6 @@ class DecryptRequest(BaseModel):
 
 class DecryptResponse(BaseModel):
     message: str
-
-    @app.post("/files/encrypt")
-    async def encrypt_file(
-            file: UploadFile = File(...),
-            public_key_pem: str = Form(...)
-    ):
-        try:
-
-            public_key = deserialize_public_key(
-                public_key_pem.encode("utf-8")
-            )
-
-
-            data = await file.read()
-
-
-            encrypted = encrypt_file_data(data, public_key)
-
-            filename = (file.filename or "plik") + ".ecc"
-
-
-            return StreamingResponse(
-                io.BytesIO(encrypted),
-                media_type="application/octet-stream",
-                headers={
-                    "Content-Disposition": f'attachment; filename="{filename}"',
-                    "Cache-Control": "no-store"
-                }
-            )
-
-        except (ValueError, TypeError):
-            raise HTTPException(
-                status_code=400,
-                detail="Nieprawidłowy klucz publiczny lub dane."
-            )
-
-
-@app.post("/files/decrypt")
-async def decrypt_file(
-    file: UploadFile = File(...),
-    private_key_pem: str = Form(...),
-    password: str = Form(...)
-):
-    try:
-
-        private_key = deserialize_private_key(
-            private_key_pem.encode("utf-8"),
-            password
-        )
-
-
-        data = await file.read()
-
-
-        decrypted = decrypt_file_data(data, private_key)
-
-        filename = file.filename or "plik.ecc"
-
-        if filename.endswith(".ecc"):
-            filename = filename[:-4]
-
-        return StreamingResponse(
-            io.BytesIO(decrypted),
-            media_type="application/octet-stream",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-                "Cache-Control": "no-store"
-            }
-        )
-
-    except (InvalidTag, ValueError, TypeError, KeyError):
-        raise HTTPException(
-            status_code=400,
-            detail="Nie udało się odszyfrować pliku."
-        )
-
 
 @app.post("/keys/export")
 def export_keys(request: ExportKeysRequest):
@@ -310,8 +233,8 @@ def homepage():
     return FileResponse(ROOT / 'index.html')
 @app.get('/assets/style.css')
 def frontend_css():
-    return FileResponse(ROOT / 'style.css', media_type='text/css')
+    return FileResponse(ROOT / 'assets' / 'style.css', media_type='text/css')
 
 @app.get('/assets/script.js')
 def frontend_js():
-    return FileResponse(ROOT / 'script.js', media_type='application/javascript')
+    return FileResponse(ROOT / 'assets' / 'script.js', media_type='application/javascript')
