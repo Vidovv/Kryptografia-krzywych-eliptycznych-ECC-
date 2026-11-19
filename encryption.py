@@ -3,9 +3,8 @@ import base64
 from getpass import getpass
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives import serialization
 from ecc_library import curve, ECCPoint
-
+from ecc_library import ECCPoint
 from ecdh import generate_shared_secret, derive_aes_key
 from key_generator import load_keys
 
@@ -29,10 +28,15 @@ def encrypt_bytes(data: bytes, public_key, aad=None):
 
     ciphertext = aesgcm.encrypt(nonce, data, aad)
 
+    public_numbers = ephemeral_public.public_numbers()
 
-    ephemeral_bytes = ephemeral_public.public_bytes(
-        encoding=serialization.Encoding.X962,
-        format=serialization.PublicFormat.UncompressedPoint
+    ephemeral_point = ECCPoint(
+        public_numbers.x,
+        public_numbers.y
+    )
+
+    ephemeral_bytes = ephemeral_point.to_bytes(
+        compressed=False
     )
 
 
@@ -55,10 +59,18 @@ def decrypt_bytes(encrypted_data, private_key, aad=None):
         encrypted_data["ephemeral_public_key"]
     )
 
+    ephemeral_point = ECCPoint.from_bytes(ephemeral_bytes)
 
-    ephemeral_public = ec.EllipticCurvePublicKey.from_encoded_point(
-        ec.SECP256K1(), ephemeral_bytes
+    if ephemeral_point.is_infinity:
+        raise ValueError("Nieprawidłowy klucz efemeryczny")
+
+    public_numbers = ec.EllipticCurvePublicNumbers(
+        ephemeral_point.x,
+        ephemeral_point.y,
+        ec.SECP256K1()
     )
+
+    ephemeral_public = public_numbers.public_key()
 
 
     shared_secret = generate_shared_secret(
